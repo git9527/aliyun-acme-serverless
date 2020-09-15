@@ -9,7 +9,7 @@ public class EnvUtil {
     public static String getEnvValue(EnvKeys key) {
         String val = getEnvValue(key, "");
         if (StringUtils.isBlank(val)) {
-            throw new IllegalArgumentException("Didn't found val for key:" + key);
+            throw new IllegalArgumentException("Didn't found val for key: " + key);
         }
         return val;
     }
@@ -19,7 +19,7 @@ public class EnvUtil {
         if (StringUtils.isBlank(val)) {
             val = defaultValue;
         }
-        logger.info("Get value:{} for key:{}", val, key);
+        logger.info("Get value: {} for key: {}", val, key);
         return val;
     }
 }
