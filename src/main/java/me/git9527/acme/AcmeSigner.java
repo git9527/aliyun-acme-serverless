@@ -2,6 +2,7 @@ package me.git9527.acme;
 
 import lombok.extern.slf4j.Slf4j;
 import me.git9527.dns.GoDaddyProvider;
+import me.git9527.oss.AliyunStorer;
 import me.git9527.util.EnvKeys;
 import me.git9527.util.EnvUtil;
 import me.git9527.util.HostUtil;
@@ -15,13 +16,13 @@ import org.shredzone.acme4j.util.KeyPairUtils;
 
 import java.io.*;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.security.KeyPair;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class AcmeSigner {
+
+    private AliyunStorer storer = new AliyunStorer();
 
     public Account initAccount() throws IOException, AcmeException {
         String endPoint = EnvUtil.getEnvValue(EnvKeys.SESSION_ENDPOINT, "https://acme-staging-v02.api.letsencrypt.org/directory");
@@ -55,6 +56,7 @@ public class AcmeSigner {
             builder.write(out);
             logger.info("write csr file to path:{}", csrFile);
         }
+        storer.uploadFile(csrFile);
         order.execute(builder.getEncoded());
         this.loopCheckStatus(order);
         Certificate certificate = order.getCertificate();
@@ -63,11 +65,14 @@ public class AcmeSigner {
         String crtFile = domainFolder + "/" + domainKey + ".crt";
         try (FileWriter fw = new FileWriter(crtFile)) {
             certificate.writeCertificate(fw);
+            logger.info("write crt file to path:{}", csrFile);
         }
+        storer.uploadFile(crtFile);
     }
 
     private KeyPair loadOrCreateKeyPair(String keyPairPath) throws IOException {
-        if (Files.exists(Paths.get(keyPairPath))) {
+        if (storer.isFileExist(keyPairPath)) {
+            storer.downloadFile(keyPairPath);
             try (FileReader fr = new FileReader(keyPairPath)) {
                 return KeyPairUtils.readKeyPair(fr);
             }
@@ -76,6 +81,7 @@ public class AcmeSigner {
             try (FileWriter fw = new FileWriter(keyPairPath)) {
                 KeyPairUtils.writeKeyPair(domainKeyPair, fw);
             }
+            storer.uploadFile(keyPairPath);
             return domainKeyPair;
         }
     }
@@ -127,25 +133,6 @@ public class AcmeSigner {
         logger.info("Registered a new user, URL: {}", account.getLocation());
         URL url = account.getLocation();
         Login login = session.login(url, keyPair);
-        return login.getAccount();
-    }
-
-    private Account getExistingAccount(KeyPair keyPair, Session session) throws AcmeException {
-        Account account = new AccountBuilder()
-                .onlyExisting()         // Do not create a new account
-                .useKeyPair(keyPair)
-                .create(session);
-        URL url = account.getLocation();
-        Login login = session.login(url, keyPair);
-        return login.getAccount();
-    }
-
-    private Account registerAccount(KeyPair keyPair, Session session) throws AcmeException {
-        Login login = new AccountBuilder()
-                .addContact(EnvUtil.getEnvValue(EnvKeys.ACCOUNT_CONTACT, "mailto:acme@aliyun-serverless.com"))
-                .agreeToTermsOfService()
-                .useKeyPair(keyPair)
-                .createLogin(session);
         return login.getAccount();
     }
 
