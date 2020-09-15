@@ -22,27 +22,36 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class AcmeSigner {
 
-    public Account initAccount() throws IOException, AcmeException {
+    public Account initAccount() throws IOException {
         String endPoint = EnvUtil.getEnvValue(EnvKeys.SESSION_ENDPOINT, "https://acme-staging-v02.api.letsencrypt.org/directory");
         Session session = new Session(endPoint);
         return this.getAccountInstance(session);
     }
 
-    public void newOrder(Account account, String domainList) throws AcmeException {
-        Order order = account.newOrder().domains(StringUtils.split(domainList, ",")).create();
+    public void newOrder(Account account, String domainList) {
+        Order order = null;
+        try {
+            order = account.newOrder().domains(StringUtils.split(domainList, ",")).create();
+        } catch (AcmeException e) {
+            throw new RuntimeException(e);
+        }
         for (Authorization auth : order.getAuthorizations()) {
             if (auth.getStatus() != Status.VALID) {
                 processAuth(auth);
                 while (auth.getStatus() != Status.VALID) {
                     this.sleepInSeconds(3);
-                    auth.update();
+                    try {
+                        auth.update();
+                    } catch (AcmeException e) {
+                        throw new RuntimeException(e);
+                    }
                     logger.info("domain:[{}] get auth result:{}", auth.getIdentifier().getDomain(), auth.getStatus());
                 }
             }
         }
     }
 
-    private void processAuth(Authorization auth) throws AcmeException {
+    private void processAuth(Authorization auth) {
         Dns01Challenge challenge = auth.findChallenge(Dns01Challenge.TYPE);
         String host = auth.getIdentifier().getDomain();
         String digest = challenge.getDigest();
@@ -50,7 +59,11 @@ public class AcmeSigner {
         provider.addTextRecord(host, digest);
         logger.info("sleep 3 seconds before validation");
         this.sleepInSeconds(3);
-        challenge.trigger();
+        try {
+            challenge.trigger();
+        } catch (AcmeException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void sleepInSeconds(int time) {
@@ -61,7 +74,7 @@ public class AcmeSigner {
         }
     }
 
-    private Account getAccountInstance(Session session) throws IOException, AcmeException {
+    private Account getAccountInstance(Session session) throws IOException {
         String keyPairPath = EnvUtil.getEnvValue(EnvKeys.KEYPAIR_PATH, "/tmp/keypair.pem");
         if (Files.exists(Paths.get(keyPairPath))) {
             logger.info("key pair key already exist");
@@ -79,22 +92,32 @@ public class AcmeSigner {
         }
     }
 
-    private Account getExistingAccount(KeyPair keyPair, Session session) throws AcmeException {
-        Account account = new AccountBuilder()
-                .onlyExisting()         // Do not create a new account
-                .useKeyPair(keyPair)
-                .create(session);
+    private Account getExistingAccount(KeyPair keyPair, Session session) {
+        Account account = null;
+        try {
+            account = new AccountBuilder()
+                    .onlyExisting()         // Do not create a new account
+                    .useKeyPair(keyPair)
+                    .create(session);
+        } catch (AcmeException e) {
+            throw new RuntimeException(e);
+        }
         URL url = account.getLocation();
         Login login = session.login(url, keyPair);
         return login.getAccount();
     }
 
-    private Account registerAccount(KeyPair keyPair, Session session) throws AcmeException {
-        Login login = new AccountBuilder()
-                .addContact(EnvUtil.getEnvValue(EnvKeys.ACCOUNT_CONTACT, "mailto:acme@aliyun-serverless.com"))
-                .agreeToTermsOfService()
-                .useKeyPair(keyPair)
-                .createLogin(session);
+    private Account registerAccount(KeyPair keyPair, Session session) {
+        Login login = null;
+        try {
+            login = new AccountBuilder()
+                    .addContact(EnvUtil.getEnvValue(EnvKeys.ACCOUNT_CONTACT, "mailto:acme@aliyun-serverless.com"))
+                    .agreeToTermsOfService()
+                    .useKeyPair(keyPair)
+                    .createLogin(session);
+        } catch (AcmeException e) {
+            throw new RuntimeException(e);
+        }
         return login.getAccount();
     }
 }
