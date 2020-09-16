@@ -2,6 +2,8 @@ package me.git9527.util;
 
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.concurrent.TimeUnit;
+
 public class HostUtil {
 
     public static String getHost(String url) {
@@ -45,6 +47,14 @@ public class HostUtil {
             return host.substring(startIndex);
         } else {
             return host;
+        }
+    }
+
+    public static void sleepInSeconds(int time) {
+        try {
+            TimeUnit.SECONDS.sleep(time);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 }

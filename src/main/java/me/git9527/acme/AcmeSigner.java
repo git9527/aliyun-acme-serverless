@@ -17,7 +17,6 @@ import org.shredzone.acme4j.util.KeyPairUtils;
 import java.io.*;
 import java.net.URL;
 import java.security.KeyPair;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class AcmeSigner {
@@ -37,7 +36,9 @@ public class AcmeSigner {
             if (auth.getStatus() != Status.VALID) {
                 Challenge challenge = processAuth(auth);
                 this.loopCheckStatus(challenge);
-                logger.info("validation SUCCESS for domain:{}", auth.getIdentifier().getDomain());
+                logger.info("validation :[{}] for domain:[{}]", auth.getStatus(), auth.getIdentifier().getDomain());
+            } else {
+                logger.info("auth already with status:[{}] for domain:[{}]", auth.getStatus(), auth.getIdentifier().getDomain());
             }
         }
         this.generateCertification(domains, order);
@@ -89,7 +90,13 @@ public class AcmeSigner {
     private void loopCheckStatus(AcmeJsonResource resource) {
         int attempts = 10;
         while (resource.getJSON().get("status").asStatus() != Status.VALID && attempts-- > 0) {
-            logger.info("failed with status:{}, attempt:{}", resource.getJSON().get("status").asStatus(), attempts);
+            Problem problem = resource.getJSON().get("error").map(it -> it.asProblem(resource.getLocation()))
+                    .orElse(null);
+            if (problem != null) {
+                logger.info("failed with detail:{}, attempt:{}", problem.getDetail(), attempts);
+            } else {
+                logger.info("failed with status:{}, attempt:{}", resource.getJSON().get("status").asStatus(), attempts);
+            }
             try {
                 resource.update();
             } catch (AcmeException e) {
@@ -98,7 +105,7 @@ public class AcmeSigner {
             if (resource.getJSON().get("status").asStatus() == Status.INVALID && attempts == 1) {
                 throw new RuntimeException("validation failed... Giving up.");
             }
-            sleepInSeconds(3);
+            HostUtil.sleepInSeconds(3);
         }
     }
 
@@ -108,18 +115,9 @@ public class AcmeSigner {
         String digest = challenge.getDigest();
         GoDaddyProvider provider = new GoDaddyProvider();
         provider.addTextRecord(host, digest);
-        logger.info("sleep 3 seconds before validation");
-        this.sleepInSeconds(3);
         challenge.trigger();
+        HostUtil.sleepInSeconds(1);
         return challenge;
-    }
-
-    private void sleepInSeconds(int time) {
-        try {
-            TimeUnit.SECONDS.sleep(time);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     private Account getAccountInstance(Session session) throws IOException, AcmeException {
