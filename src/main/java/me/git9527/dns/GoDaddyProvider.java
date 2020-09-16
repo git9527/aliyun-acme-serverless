@@ -12,24 +12,32 @@ import java.io.IOException;
 @Slf4j
 public class GoDaddyProvider implements DnsProvider {
 
+    private int SLEEP = 30;
+
     @Override
-    public void addTextRecord(String host, String textValue) {
+    public void addTextRecord(String host, String digest) {
         String baseDomain = HostUtil.getBaseDomain(host);
         String subDomain = "_acme-challenge." + HostUtil.getSubDomain(host);
         String url = "https://api.godaddy.com/v1/domains/" + baseDomain + "/records/TXT/" + subDomain;
-        if (this.checkIfAlreadyExist(url, textValue)) {
+        String current = this.getCurrentTxt(url);
+        if (StringUtils.equals(current, digest)) {
+            logger.info("txt value already exist:{}", digest);
             return;
+        } else {
+            logger.info("current txt:{}, expected:{}", current, digest);
         }
         OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder();
         this.addCredential(clientBuilder);
-        RequestBody requestBody = RequestBody.create(MediaType.parse("application/json; charset=utf-8"), "[{\"data\":\"" + textValue + "\",\"ttl\":600}]");
+        RequestBody requestBody = RequestBody.create(MediaType.parse("application/json; charset=utf-8"), "[{\"data\":\"" + digest + "\",\"ttl\":600}]");
         Request request = new Request.Builder().url(url).put(requestBody).build();
         final Call call = clientBuilder.build().newCall(request);
         String response = this.getResponseBody(call);
-        logger.info("add text value:{} to sub domain:[{}] for base domain:[{}], result:[{}]", textValue, subDomain, baseDomain, response);
+        logger.info("add text value:{} to sub domain:[{}] for base domain:[{}], result:[{}]", digest, subDomain, baseDomain, response);
         logger.info("you may get result in:{}", url);
-        logger.info("sleep 20 seconds before validation");
-        HostUtil.sleepInSeconds(20);
+        logger.info("sleep {} seconds before validation", SLEEP);
+        HostUtil.sleepInSeconds(SLEEP);
+        String afterUpdated = this.getCurrentTxt(url);
+        logger.info("txt after update:{}", afterUpdated);
     }
 
     private void addCredential(OkHttpClient.Builder clientBuilder) {
@@ -41,19 +49,13 @@ public class GoDaddyProvider implements DnsProvider {
         });
     }
 
-    private boolean checkIfAlreadyExist(String url, String digest) {
+    private String getCurrentTxt(String url) {
         OkHttpClient.Builder builder = new OkHttpClient.Builder();
         this.addCredential(builder);
         Request request = new Request.Builder().url(url).get().build();
         final Call call = builder.build().newCall(request);
         String body = this.getResponseBody(call);
-        if (StringUtils.contains(body, digest)) {
-            logger.info("record already exist with digest:{}", digest);
-            return true;
-        } else {
-            logger.info("current text content:{}, not match", body);
-            return false;
-        }
+        return StringUtils.substringBetween(body, "\"data\":\"", "\"");
     }
 
     private String getResponseBody(Call call) {
