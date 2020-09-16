@@ -1,12 +1,14 @@
 package me.git9527.acme;
 
 import lombok.extern.slf4j.Slf4j;
+import me.git9527.dns.AliyunProvider;
 import me.git9527.dns.GoDaddyProvider;
 import me.git9527.oss.AliyunStorer;
 import me.git9527.util.EnvKeys;
 import me.git9527.util.EnvUtil;
 import me.git9527.util.HostUtil;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.shredzone.acme4j.*;
 import org.shredzone.acme4j.challenge.Challenge;
 import org.shredzone.acme4j.challenge.Dns01Challenge;
@@ -42,27 +44,32 @@ public class AcmeSigner {
         String crtFile = domainFolder + "/" + domainKey + ".crt";
         if (storer.isFileExist(crtFile)) {
             storer.downloadFile(crtFile);
-            try {
-                X509Certificate myCert = (X509Certificate) CertificateFactory
-                        .getInstance("X509")
-                        .generateCertificate(new FileInputStream(new File(crtFile)));
-                Instant expireDay = myCert.getNotAfter().toInstant();
-                String day = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.ofHours(8)).format(expireDay);
-                Duration duration = Duration.between(Instant.now(), expireDay);
-                long days = duration.toDays();
-                if (days < 30) {
-                    logger.info("current certificate expired at: {}, less than {} days, renew", day, days);
-                    return true;
-                } else {
-                    logger.info("current certificate expired at: {}, still got {} days", day, days);
-                    return false;
-                }
-            } catch (Exception e) {
-                logger.error("error to check certificate expiration for domain:{}", domainKey, e);
-                return true;
-            }
+            return isCloseToExpire(domainKey, crtFile);
         } else {
             logger.info("crt file not exist for:{}, order new certificate", domainKey);
+            return true;
+        }
+    }
+
+    private boolean isCloseToExpire(String domainKey, String crtFile) {
+        try {
+            X509Certificate myCert = (X509Certificate) CertificateFactory
+                    .getInstance("X509")
+                    .generateCertificate(new FileInputStream(new File(crtFile)));
+            Instant expireDay = myCert.getNotAfter().toInstant();
+            String day = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.ofHours(8)).format(expireDay);
+            Duration duration = Duration.between(Instant.now(), expireDay);
+            long threshold = NumberUtils.toLong(EnvUtil.getEnvValue(EnvKeys.EXPIRE_BEFORE_DAY, "30"));
+            long days = duration.toDays();
+            if (days < threshold) {
+                logger.info("current certificate expired at: {}, only {} days, less than {} days, renew", day, days, threshold);
+                return true;
+            } else {
+                logger.info("current certificate expired at: {}, still got {} days", day, days);
+                return false;
+            }
+        } catch (Exception e) {
+            logger.error("error to check certificate expiration for domain:{}", domainKey, e);
             return true;
         }
     }
@@ -151,8 +158,16 @@ public class AcmeSigner {
         Dns01Challenge challenge = auth.findChallenge(Dns01Challenge.TYPE);
         String host = auth.getIdentifier().getDomain();
         String digest = challenge.getDigest();
-        GoDaddyProvider provider = new GoDaddyProvider();
-        provider.addTextRecord(host, digest);
+        String dnsProvider = EnvUtil.getEnvValue(EnvKeys.DNS_PROVIDER);
+        if (StringUtils.equalsIgnoreCase(dnsProvider, "GODADDY")) {
+            GoDaddyProvider provider = new GoDaddyProvider(host);
+            provider.addTextRecord(digest);
+        } else if (StringUtils.equalsIgnoreCase(dnsProvider, "ALIYUN")) {
+            AliyunProvider provider = new AliyunProvider(host);
+            provider.addTextRecord(digest);
+        } else {
+            throw new IllegalArgumentException("not support dns provider:" + dnsProvider);
+        }
         challenge.trigger();
         HostUtil.sleepInSeconds(1);
         return challenge;

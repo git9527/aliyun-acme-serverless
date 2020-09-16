@@ -30,6 +30,7 @@ public class AliyunStorer {
         String bucket = EnvUtil.getEnvValue(EnvKeys.OSS_BUCKET);
         OSS ossClient = this.getOssClient();
         String objectKey = this.getKeyFromPath(localPath);
+        new File(localPath).getParentFile().mkdirs();
         ossClient.getObject(new GetObjectRequest(bucket, objectKey), new File(localPath));
         ossClient.shutdown();
         logger.info("download remote file:{} to local:{}", objectKey, localPath);

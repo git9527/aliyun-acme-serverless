@@ -11,19 +11,21 @@ import org.apache.commons.lang3.math.NumberUtils;
 import java.io.IOException;
 
 @Slf4j
-public class GoDaddyProvider implements DnsProvider {
+public class GoDaddyProvider extends DnsProvider {
+
+    public GoDaddyProvider(String host) {
+        super(host);
+    }
 
     @Override
-    public void addTextRecord(String host, String digest) {
-        String baseDomain = HostUtil.getBaseDomain(host);
-        String subDomain = "_acme-challenge." + HostUtil.getSubDomain(host);
+    public void addTextRecord(String digest) {
         String url = "https://api.godaddy.com/v1/domains/" + baseDomain + "/records/TXT/" + subDomain;
         String current = this.getCurrentTxt(url);
         if (StringUtils.equals(current, digest)) {
             logger.info("txt value already exist:{}", digest);
             return;
         } else {
-            logger.info("current txt:{}, expected:{}", current, digest);
+            logger.info("current txt:[{}], expected:[{}]", current, digest);
         }
         OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder();
         this.addCredential(clientBuilder);
@@ -33,17 +35,17 @@ public class GoDaddyProvider implements DnsProvider {
         String response = this.getResponseBody(call);
         logger.info("add text value:{} to sub domain:[{}] for base domain:[{}], result:[{}]", digest, subDomain, baseDomain, response);
         logger.info("you may get result in:{}", url);
-        int sleep = NumberUtils.toInt(EnvUtil.getEnvValue(EnvKeys.GODADDY_SLEEP, "30"));
+        int sleep = NumberUtils.toInt(EnvUtil.getEnvValue(EnvKeys.DNS_SLEEP, "30"));
         logger.info("sleep {} seconds before validation", sleep);
         HostUtil.sleepInSeconds(sleep);
         String afterUpdated = this.getCurrentTxt(url);
-        logger.info("txt after update:{}", afterUpdated);
+        logger.info("txt after update:[{}]", afterUpdated);
     }
 
     private void addCredential(OkHttpClient.Builder clientBuilder) {
         clientBuilder.authenticator((route, response) -> {
-            String key = EnvUtil.getEnvValue(EnvKeys.GODADDY_KEY);
-            String secret = EnvUtil.getEnvValue(EnvKeys.GODADDY_SECRET);
+            String key = EnvUtil.getEnvValue(EnvKeys.DNS_GODADDY_KEY);
+            String secret = EnvUtil.getEnvValue(EnvKeys.DNS_GODADDY_SECRET);
             String fullCredential = "sso-key " + key + ":" + secret;
             return response.request().newBuilder().header("Authorization", fullCredential).build();
         });
