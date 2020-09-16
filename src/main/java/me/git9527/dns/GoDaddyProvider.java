@@ -6,13 +6,12 @@ import me.git9527.util.EnvUtil;
 import me.git9527.util.HostUtil;
 import okhttp3.*;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 
 import java.io.IOException;
 
 @Slf4j
 public class GoDaddyProvider implements DnsProvider {
-
-    private int SLEEP = 30;
 
     @Override
     public void addTextRecord(String host, String digest) {
@@ -34,8 +33,9 @@ public class GoDaddyProvider implements DnsProvider {
         String response = this.getResponseBody(call);
         logger.info("add text value:{} to sub domain:[{}] for base domain:[{}], result:[{}]", digest, subDomain, baseDomain, response);
         logger.info("you may get result in:{}", url);
-        logger.info("sleep {} seconds before validation", SLEEP);
-        HostUtil.sleepInSeconds(SLEEP);
+        int sleep = NumberUtils.toInt(EnvUtil.getEnvValue(EnvKeys.GODADDY_SLEEP, "30"));
+        logger.info("sleep {} seconds before validation", sleep);
+        HostUtil.sleepInSeconds(sleep);
         String afterUpdated = this.getCurrentTxt(url);
         logger.info("txt after update:{}", afterUpdated);
     }

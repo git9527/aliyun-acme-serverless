@@ -6,6 +6,7 @@ public enum EnvKeys {
     KEYPAIR_FOLDER,
     GODADDY_KEY,
     GODADDY_SECRET,
+    GODADDY_SLEEP,
     DOMAIN_LIST,
     OSS_ENDPOINT,
     OSS_ACCESS_KEY,

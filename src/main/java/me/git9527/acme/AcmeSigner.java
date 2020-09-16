@@ -17,6 +17,12 @@ import org.shredzone.acme4j.util.KeyPairUtils;
 import java.io.*;
 import java.net.URL;
 import java.security.KeyPair;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 
 @Slf4j
 public class AcmeSigner {
@@ -27,6 +33,38 @@ public class AcmeSigner {
         String endPoint = EnvUtil.getEnvValue(EnvKeys.SESSION_ENDPOINT, "https://acme-staging-v02.api.letsencrypt.org/directory");
         Session session = new Session(endPoint);
         return this.getAccountInstance(session);
+    }
+
+    public boolean needOrderNewCertificate(String domainList) {
+        String[] domains = StringUtils.split(domainList, ",");
+        String domainKey = HostUtil.getHost(domains[0]).replace("*.", "");
+        String domainFolder = this.getKeyPairFolder() + "/" + domainKey;
+        String crtFile = domainFolder + "/" + domainKey + ".crt";
+        if (storer.isFileExist(crtFile)) {
+            storer.downloadFile(crtFile);
+            try {
+                X509Certificate myCert = (X509Certificate) CertificateFactory
+                        .getInstance("X509")
+                        .generateCertificate(new FileInputStream(new File(crtFile)));
+                Instant expireDay = myCert.getNotAfter().toInstant();
+                String day = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.ofHours(8)).format(expireDay);
+                Duration duration = Duration.between(Instant.now(), expireDay);
+                long days = duration.toDays();
+                if (days < 30) {
+                    logger.info("current certificate expired at: {}, less than {} days, renew", day, days);
+                    return true;
+                } else {
+                    logger.info("current certificate expired at: {}, still got {} days", day, days);
+                    return false;
+                }
+            } catch (Exception e) {
+                logger.error("error to check certificate expiration for domain:{}", domainKey, e);
+                return true;
+            }
+        } else {
+            logger.info("crt file not exist for:{}, order new certificate", domainKey);
+            return true;
+        }
     }
 
     public void newOrder(Account account, String domainList) throws IOException, AcmeException {

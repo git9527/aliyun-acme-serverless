@@ -23,12 +23,16 @@ public class FcAcme implements StreamRequestHandler {
 
     @Override
     public void handleRequest(InputStream inputStream, OutputStream outputStream, Context context) throws IOException {
-        logger.info("start");
+        logger.info("acme signer start...");
         AcmeSigner signer = new AcmeSigner();
+        String domainList = EnvUtil.getEnvValue(EnvKeys.DOMAIN_LIST);
         try {
-            Account account = signer.initAccount();
-            String domainList = EnvUtil.getEnvValue(EnvKeys.DOMAIN_LIST);
-            signer.newOrder(account, domainList);
+            if (signer.needOrderNewCertificate(domainList)) {
+                Account account = signer.initAccount();
+                signer.newOrder(account, domainList);
+            } else {
+                logger.info("nothing else to do, ending....");
+            }
         } catch (AcmeException e) {
             throw new RuntimeException(e);
         }
