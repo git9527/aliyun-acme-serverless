@@ -14,6 +14,7 @@ public enum EnvKeys {
     DNS_ALI_ACCESS_KEY,
     DNS_ALI_ACCESS_SECRET,
     DNS_SLEEP,
+    DNS_LOOP_RETRY,
     DNS_GODADDY_KEY,
     DNS_GODADDY_SECRET;
 }

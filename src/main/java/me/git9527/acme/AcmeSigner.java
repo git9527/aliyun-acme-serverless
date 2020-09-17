@@ -136,7 +136,7 @@ public class AcmeSigner {
     }
 
     private void loopCheckStatus(AcmeJsonResource resource) {
-        int attempts = 10;
+        int attempts = NumberUtils.toInt(EnvUtil.getEnvValue(EnvKeys.DNS_LOOP_RETRY, "10"));
         while (resource.getJSON().get("status").asStatus() != Status.VALID && attempts-- > 0) {
             Problem problem = resource.getJSON().get("error").map(it -> it.asProblem(resource.getLocation()))
                     .orElse(null);
