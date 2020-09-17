@@ -170,10 +170,9 @@ public class AcmeSigner {
         String host = auth.getIdentifier().getDomain();
         Dns01Challenge challenge = auth.findChallenge(Dns01Challenge.TYPE);
         String digest = challenge.getDigest();
-        String dnsProvider = EnvUtil.getEnvValue(EnvKeys.DNS_PROVIDER);
+        String dnsProvider = EnvUtil.getEnvValue(EnvKeys.DNS_PROVIDER, "ALIYUN");
         if (StringUtils.equalsIgnoreCase(dnsProvider, "GODADDY")) {
             return new GoDaddyProvider(host, digest);
-
         } else if (StringUtils.equalsIgnoreCase(dnsProvider, "ALIYUN")) {
             return new AliyunProvider(host, digest);
         } else {

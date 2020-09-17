@@ -3,8 +3,10 @@ package me.git9527.util;
 import me.git9527.dns.AliyunProvider;
 import me.git9527.dns.GoDaddyProvider;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 public class TestDnsProvider {
 
     @Test
