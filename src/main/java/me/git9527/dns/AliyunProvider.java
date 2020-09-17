@@ -2,10 +2,7 @@ package me.git9527.dns;
 
 import com.aliyuncs.DefaultAcsClient;
 import com.aliyuncs.IAcsClient;
-import com.aliyuncs.alidns.model.v20150109.AddDomainRecordRequest;
-import com.aliyuncs.alidns.model.v20150109.AddDomainRecordResponse;
-import com.aliyuncs.alidns.model.v20150109.DescribeSubDomainRecordsRequest;
-import com.aliyuncs.alidns.model.v20150109.DescribeSubDomainRecordsResponse;
+import com.aliyuncs.alidns.model.v20150109.*;
 import com.aliyuncs.exceptions.ClientException;
 import com.aliyuncs.profile.DefaultProfile;
 import com.aliyuncs.profile.IClientProfile;
@@ -21,12 +18,12 @@ import java.util.List;
 @Slf4j
 public class AliyunProvider extends DnsProvider {
 
-    public AliyunProvider(String host) {
-        super(host);
+    public AliyunProvider(String host, String digest) {
+        super(host, digest);
     }
 
     @Override
-    public void addTextRecord(String digest) {
+    public void addTextRecord() {
         String current = this.getCurrentTxt();
         if (StringUtils.equals(current, digest)) {
             logger.info("txt value already exist:[{}]", digest);
@@ -43,12 +40,28 @@ public class AliyunProvider extends DnsProvider {
         logger.info("txt after update:[{}]", afterUpdated);
     }
 
+    @Override
+    public void removeValidatedRecord() {
+        IAcsClient client = this.getClient();
+        DeleteSubDomainRecordsRequest request = new DeleteSubDomainRecordsRequest();
+        request.setDomainName(baseDomain);
+        request.setRR(subDomain);
+        request.setType(RECORD_TYPE);
+        try {
+            DeleteSubDomainRecordsResponse recordResponse = client.getAcsResponse(request);
+            String requestId = recordResponse.getRequestId();
+            logger.info("remove validated record with request id:{}", requestId);
+        } catch (ClientException e) {
+            logger.error("fail to remove record", e);
+        }
+    }
+
     private String addNewRecord(String digest) {
         IAcsClient client = this.getClient();
         AddDomainRecordRequest recordRequest = new AddDomainRecordRequest();
         recordRequest.setDomainName(baseDomain);
         recordRequest.setRR(subDomain);
-        recordRequest.setType("TXT");
+        recordRequest.setType(RECORD_TYPE);
         recordRequest.setValue(digest);
         try {
             AddDomainRecordResponse recordResponse = client.getAcsResponse(recordRequest);

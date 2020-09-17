@@ -2,6 +2,7 @@ package me.git9527.acme;
 
 import lombok.extern.slf4j.Slf4j;
 import me.git9527.dns.AliyunProvider;
+import me.git9527.dns.DnsProvider;
 import me.git9527.dns.GoDaddyProvider;
 import me.git9527.oss.AliyunStorer;
 import me.git9527.util.EnvKeys;
@@ -82,6 +83,8 @@ public class AcmeSigner {
                 Challenge challenge = processAuth(auth);
                 this.loopCheckStatus(challenge);
                 logger.info("validation :[{}] for domain:[{}]", auth.getStatus(), auth.getIdentifier().getDomain());
+                DnsProvider provider = this.getCurrentDnsProvider(auth);
+                provider.removeValidatedRecord();
             } else {
                 logger.info("auth already with status:[{}] for domain:[{}]", auth.getStatus(), auth.getIdentifier().getDomain());
             }
@@ -156,21 +159,26 @@ public class AcmeSigner {
 
     private Challenge processAuth(Authorization auth) throws AcmeException {
         Dns01Challenge challenge = auth.findChallenge(Dns01Challenge.TYPE);
-        String host = auth.getIdentifier().getDomain();
-        String digest = challenge.getDigest();
-        String dnsProvider = EnvUtil.getEnvValue(EnvKeys.DNS_PROVIDER);
-        if (StringUtils.equalsIgnoreCase(dnsProvider, "GODADDY")) {
-            GoDaddyProvider provider = new GoDaddyProvider(host);
-            provider.addTextRecord(digest);
-        } else if (StringUtils.equalsIgnoreCase(dnsProvider, "ALIYUN")) {
-            AliyunProvider provider = new AliyunProvider(host);
-            provider.addTextRecord(digest);
-        } else {
-            throw new IllegalArgumentException("not support dns provider:" + dnsProvider);
-        }
+        DnsProvider provider = this.getCurrentDnsProvider(auth);
+        provider.addTextRecord();
         challenge.trigger();
         HostUtil.sleepInSeconds(1);
         return challenge;
+    }
+
+    private DnsProvider getCurrentDnsProvider(Authorization auth) {
+        String host = auth.getIdentifier().getDomain();
+        Dns01Challenge challenge = auth.findChallenge(Dns01Challenge.TYPE);
+        String digest = challenge.getDigest();
+        String dnsProvider = EnvUtil.getEnvValue(EnvKeys.DNS_PROVIDER);
+        if (StringUtils.equalsIgnoreCase(dnsProvider, "GODADDY")) {
+            return new GoDaddyProvider(host, digest);
+
+        } else if (StringUtils.equalsIgnoreCase(dnsProvider, "ALIYUN")) {
+            return new AliyunProvider(host, digest);
+        } else {
+            throw new IllegalArgumentException("not support dns provider:" + dnsProvider);
+        }
     }
 
     private Account getAccountInstance(Session session) throws IOException, AcmeException {
