@@ -26,6 +26,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.Collection;
+import java.util.List;
 
 @Slf4j
 public class AcmeSigner {
@@ -58,6 +60,10 @@ public class AcmeSigner {
                     .getInstance("X509")
                     .generateCertificate(new FileInputStream(new File(crtFile)));
             Instant expireDay = myCert.getNotAfter().toInstant();
+            Collection<List<?>> domains = myCert.getSubjectAlternativeNames();
+            for (List<?> domain : domains) {
+                logger.info("existing cert contains domain:{}", domain.get(1));
+            }
             String day = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.ofHours(8)).format(expireDay);
             Duration duration = Duration.between(Instant.now(), expireDay);
             long threshold = NumberUtils.toLong(EnvUtil.getEnvValue(EnvKeys.EXPIRE_BEFORE_DAY, "30"));
