@@ -1,6 +1,7 @@
 package me.git9527.dns;
 
 import me.git9527.util.HostUtil;
+import org.apache.commons.lang3.StringUtils;
 
 public abstract class DnsProvider {
 
@@ -14,7 +15,12 @@ public abstract class DnsProvider {
 
     public DnsProvider(String host, String digest) {
         this.baseDomain = HostUtil.getBaseDomain(host);
-        this.subDomain = "_acme-challenge." + HostUtil.getSubDomain(host);
+        String subDomain = HostUtil.getSubDomain(host);
+        if (StringUtils.isBlank(subDomain)) {
+            this.subDomain = "_acme-challenge";
+        } else {
+            this.subDomain = "_acme-challenge." + subDomain;
+        }
         this.digest = digest;
     }
 
