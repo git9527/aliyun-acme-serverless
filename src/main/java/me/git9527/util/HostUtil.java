@@ -32,7 +32,6 @@ public class HostUtil {
         return StringUtils.endsWithIgnoreCase(subDomain, baseDomain) ? "" : subDomain;
     }
 
-
     public static String getBaseDomain(String url) {
         String host = getHost(url);
 

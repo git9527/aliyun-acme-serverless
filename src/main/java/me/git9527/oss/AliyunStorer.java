@@ -38,7 +38,9 @@ public class AliyunStorer {
 
     private String getKeyFromPath(String localPath) {
         String parentFolder = EnvUtil.getEnvValue(EnvKeys.KEYPAIR_FOLDER, "/tmp/acme") + '/';
-        return StringUtils.substringAfter(localPath, parentFolder);
+        String key = StringUtils.substringAfter(localPath, parentFolder);
+        String prefix = EnvUtil.getEnvValue(EnvKeys.OSS_PREFIX, "");
+        return prefix + key;
     }
 
     public boolean isFileExist(String localPath) {
