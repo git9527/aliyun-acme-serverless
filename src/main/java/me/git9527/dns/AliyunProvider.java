@@ -78,7 +78,7 @@ public class AliyunProvider extends DnsProvider {
         try {
             DescribeSubDomainRecordsResponse response = client.getAcsResponse(request);
             List<DescribeSubDomainRecordsResponse.Record> records = response.getDomainRecords();
-            if (records == null || records.size() == 0) {
+            if (records == null || records.isEmpty()) {
                 return "";
             } else {
                 return records.get(0).getValue();

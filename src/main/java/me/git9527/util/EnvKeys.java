@@ -17,5 +17,9 @@ public enum EnvKeys {
     DNS_SLEEP,
     DNS_LOOP_RETRY,
     DNS_GODADDY_KEY,
-    DNS_GODADDY_SECRET;
+    DNS_GODADDY_SECRET,
+    
+    DNS_CF_EMAIL,
+    
+    DNS_CF_KEY;
 }
