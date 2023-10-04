@@ -87,10 +87,10 @@ public class AcmeSigner {
         Order order = account.newOrder().domains(domains).create();
         for (Authorization auth : order.getAuthorizations()) {
             if (auth.getStatus() != Status.VALID) {
-                Challenge challenge = processAuth(auth);
+                DnsProvider provider = this.getCurrentDnsProvider(auth);
+                Challenge challenge = processAuth(auth, provider);
                 this.loopCheckStatus(challenge);
                 logger.info("validation :[{}] for domain:[{}]", auth.getStatus(), auth.getIdentifier().getDomain());
-                DnsProvider provider = this.getCurrentDnsProvider(auth);
                 provider.removeValidatedRecord();
             } else {
                 logger.info("auth already with status:[{}] for domain:[{}]", auth.getStatus(), auth.getIdentifier().getDomain());
@@ -164,9 +164,8 @@ public class AcmeSigner {
         }
     }
 
-    private Challenge processAuth(Authorization auth) throws AcmeException {
+    private Challenge processAuth(Authorization auth, DnsProvider provider) throws AcmeException {
         Dns01Challenge challenge = auth.findChallenge(Dns01Challenge.TYPE);
-        DnsProvider provider = this.getCurrentDnsProvider(auth);
         provider.addTextRecord();
         challenge.trigger();
         HostUtil.sleepInSeconds(1);

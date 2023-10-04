@@ -23,6 +23,10 @@ public abstract class DnsProvider {
         }
         this.digest = digest;
     }
+    
+    protected String toBeVerified() {
+        return this.subDomain + "." + baseDomain;
+    }
 
     public abstract void addTextRecord();
 

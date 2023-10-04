@@ -17,15 +17,13 @@ public class CloudFlareProvider extends DnsProvider {
     
     private final static String BASE_PREFIX = "https://api.cloudflare.com/client/v4";
     
-    private final String host;
-    
     private String verifiedId;
     
     private String zoneId;
 
     public CloudFlareProvider(String host, String digest) {
         super(host, digest);
-        this.host = host;
+        logger.info("checking host:{} with digest:{}", host, digest);
     }
 
     @Override
@@ -94,7 +92,7 @@ public class CloudFlareProvider extends DnsProvider {
         DnsListResp dnsListResp = toJson(body, DnsListResp.class);
         if (dnsListResp.isSuccess()) {
             for (DnsRecord dnsRecord: dnsListResp.getDnsRecords()) {
-                if (dnsRecord.getType().equalsIgnoreCase("TXT") && dnsRecord.getName().equalsIgnoreCase(this.host)) {
+                if (dnsRecord.getType().equalsIgnoreCase("TXT") && dnsRecord.getName().equalsIgnoreCase(super.toBeVerified())) {
                     return dnsRecord;
                 }
             }
@@ -124,7 +122,7 @@ public class CloudFlareProvider extends DnsProvider {
         Gson gson = new Gson();
         DnsRecord dnsRecord = new DnsRecord();
         dnsRecord.setContent(this.digest);
-        dnsRecord.setName(this.host);
+        dnsRecord.setName(super.toBeVerified());
         dnsRecord.setProxied(false);
         dnsRecord.setType("TXT");
         dnsRecord.setComment("Auto inserted");
