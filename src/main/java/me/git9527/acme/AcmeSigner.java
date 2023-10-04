@@ -2,6 +2,7 @@ package me.git9527.acme;
 
 import lombok.extern.slf4j.Slf4j;
 import me.git9527.dns.AliyunProvider;
+import me.git9527.dns.CloudFlareProvider;
 import me.git9527.dns.DnsProvider;
 import me.git9527.dns.GoDaddyProvider;
 import me.git9527.oss.AliyunStorer;
@@ -176,11 +177,13 @@ public class AcmeSigner {
         String host = auth.getIdentifier().getDomain();
         Dns01Challenge challenge = auth.findChallenge(Dns01Challenge.TYPE);
         String digest = challenge.getDigest();
-        String dnsProvider = EnvUtil.getEnvValue(EnvKeys.DNS_PROVIDER, "ALIYUN");
+        String dnsProvider = EnvUtil.getEnvValue(EnvKeys.DNS_PROVIDER, "CLOUDFLARE");
         if (StringUtils.equalsIgnoreCase(dnsProvider, "GODADDY")) {
             return new GoDaddyProvider(host, digest);
         } else if (StringUtils.equalsIgnoreCase(dnsProvider, "ALIYUN")) {
             return new AliyunProvider(host, digest);
+        } else if (StringUtils.equalsIgnoreCase(dnsProvider, "CLOUDFLARE")) {
+            return new CloudFlareProvider(host, digest);
         } else {
             throw new IllegalArgumentException("not support dns provider:" + dnsProvider);
         }
