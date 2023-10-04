@@ -94,7 +94,7 @@ public class CloudFlareProvider extends DnsProvider {
         DnsListResp dnsListResp = toJson(body, DnsListResp.class);
         if (dnsListResp.isSuccess()) {
             for (DnsRecord dnsRecord: dnsListResp.getDnsRecords()) {
-                if (dnsRecord.getName().equalsIgnoreCase(this.host)) {
+                if (dnsRecord.getType().equalsIgnoreCase("TXT") && dnsRecord.getName().equalsIgnoreCase(this.host)) {
                     return dnsRecord;
                 }
             }
