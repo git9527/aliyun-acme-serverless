@@ -21,6 +21,8 @@ import org.shredzone.acme4j.util.KeyPairUtils;
 
 import java.io.*;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -54,7 +56,13 @@ public class AcmeSigner {
 
     public String getKeyFile(String domainKey) {
         String domainFolder = this.getKeyPairFolder() + "/" + domainKey;
-        return domainFolder + "/" + domainKey + ".key";
+        String localKey = domainFolder + "/" + domainKey + ".key";
+        if (Files.exists(Path.of(localKey))) {
+            return localKey;
+        } else {
+            storer.downloadFile(localKey);
+            return localKey;
+        }
     }
 
     public boolean needOrderNewCertificate(String domainList) {
