@@ -216,6 +216,8 @@ public class AcmeSigner {
         KeyPair keyPair = this.loadOrCreateKeyPair(userKeyPair);
         Account account = new AccountBuilder()
                 .agreeToTermsOfService()
+                .addContact("git9527")
+                .addEmail("support@etradeunion.cn")
                 .useKeyPair(keyPair)
                 .create(session);
         logger.info("Registered a new user, URL: {}", account.getLocation());
