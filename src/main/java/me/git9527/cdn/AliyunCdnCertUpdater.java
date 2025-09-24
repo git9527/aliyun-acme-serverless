@@ -7,11 +7,14 @@ import com.aliyuncs.profile.DefaultProfile;
 import lombok.extern.slf4j.Slf4j;
 import me.git9527.util.EnvKeys;
 import me.git9527.util.EnvUtil;
+import me.git9527.util.X509Utils;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
@@ -25,7 +28,9 @@ public class AliyunCdnCertUpdater {
 
     private final String keyContent;
 
-    public AliyunCdnCertUpdater(String certFilePath, String keyFilePath) throws IOException {
+    private String expireDay = "";
+
+    public AliyunCdnCertUpdater(String certFilePath, String keyFilePath) throws Exception {
         String regionId = EnvUtil.getEnvValue(EnvKeys.CDN_ALI_REGION, "cn-shanghai");
         String regionKey = EnvUtil.getEnvValue(EnvKeys.CDN_ALI_ACCESS_KEY);
         logger.info("Use Aliyun CDN with regionId: {}, accessKey: {}", regionId, regionKey);
@@ -35,17 +40,20 @@ public class AliyunCdnCertUpdater {
 
         certContent = Files.readString(Path.of(certFilePath));
         keyContent = Files.readString(Path.of(keyFilePath));
+
+        Instant endDay = X509Utils.getExpireDayFromCert(certFilePath);
+        expireDay = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneOffset.ofHours(8)).format(endDay);
     }
 
 
-    public void updateCertificates(String domains) {
+    public void updateCertificates(String domainKey, String domains) {
         logger.info("Updating CDN certificates for domains: {}", domains);
-        List<String> domainList = Arrays.asList(domains.split(","));
+        String[] domainList = domains.split(",");
+        String certName = domainKey + "-ends-" + expireDay;
         for (String domain : domainList) {
             SetDomainServerCertificateRequest request = new SetDomainServerCertificateRequest();
             request.setDomainName(domain);
             request.setCertType("upload");
-            String certName = "my-cert-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmm"));
             request.setCertName(certName);
             request.setServerCertificate(certContent);
             request.setPrivateKey(keyContent);

@@ -39,12 +39,12 @@ public class FcAcme implements StreamRequestHandler {
                     String crtFilePath = signer.getCrtFile(domainKey);
                     String keyFilePath = signer.getKeyFile(domainKey);
                     AliyunCdnCertUpdater updater = new AliyunCdnCertUpdater(crtFilePath, keyFilePath);
-                    updater.updateCertificates(cdnDomainList);
+                    updater.updateCertificates(domainKey, cdnDomainList);
                 } else {
                     logger.info("nothing else to do, ending....");
                 }
             }
-        } catch (AcmeException e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
