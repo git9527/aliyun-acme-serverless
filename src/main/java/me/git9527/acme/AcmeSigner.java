@@ -10,6 +10,7 @@ import me.git9527.util.EnvKeys;
 import me.git9527.util.EnvUtil;
 import me.git9527.util.HostUtil;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.shredzone.acme4j.*;
 import org.shredzone.acme4j.challenge.Challenge;
@@ -33,7 +34,7 @@ import java.util.List;
 @Slf4j
 public class AcmeSigner {
 
-    private AliyunStorer storer = new AliyunStorer();
+    private final AliyunStorer storer = new AliyunStorer();
 
     public Account initAccount() throws IOException, AcmeException {
         String endPoint = EnvUtil.getEnvValue(EnvKeys.SESSION_ENDPOINT, "https://acme-staging-v02.api.letsencrypt.org/directory");
@@ -153,7 +154,7 @@ public class AcmeSigner {
                 logger.info("failed with status:{}, attempt:{}", resource.getJSON().get("status").asStatus(), attempts);
             }
             try {
-                resource.update();
+                resource.fetch();
             } catch (AcmeException e) {
                 logger.error("fail to update status", e);
             }
@@ -165,7 +166,7 @@ public class AcmeSigner {
     }
 
     private Challenge processAuth(Authorization auth, DnsProvider provider) throws AcmeException {
-        Challenge challenge = auth.findChallenge(Dns01Challenge.TYPE);
+        Challenge challenge = auth.findChallenge(Dns01Challenge.TYPE).get();
         provider.addTextRecord();
         challenge.trigger();
         HostUtil.sleepInSeconds(1);
@@ -174,14 +175,14 @@ public class AcmeSigner {
 
     private DnsProvider getCurrentDnsProvider(Authorization auth) {
         String host = auth.getIdentifier().getDomain();
-        Dns01Challenge challenge = auth.findChallenge(Dns01Challenge.TYPE);
+        Dns01Challenge challenge = (Dns01Challenge) auth.findChallenge(Dns01Challenge.TYPE).get();
         String digest = challenge.getDigest();
         String dnsProvider = EnvUtil.getEnvValue(EnvKeys.DNS_PROVIDER, "CLOUDFLARE");
-        if (StringUtils.equalsIgnoreCase(dnsProvider, "GODADDY")) {
+        if (Strings.CI.equals(dnsProvider, "GODADDY")) {
             return new GoDaddyProvider(host, digest);
-        } else if (StringUtils.equalsIgnoreCase(dnsProvider, "ALIYUN")) {
+        } else if (Strings.CI.equals(dnsProvider, "ALIYUN")) {
             return new AliyunProvider(host, digest);
-        } else if (StringUtils.equalsIgnoreCase(dnsProvider, "CLOUDFLARE")) {
+        } else if (Strings.CI.equals(dnsProvider, "CLOUDFLARE")) {
             return new CloudFlareProvider(host, digest);
         } else {
             throw new IllegalArgumentException("not support dns provider:" + dnsProvider);
