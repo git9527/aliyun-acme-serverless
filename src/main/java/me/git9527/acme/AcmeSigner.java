@@ -42,11 +42,24 @@ public class AcmeSigner {
         return this.getAccountInstance(session);
     }
 
-    public boolean needOrderNewCertificate(String domainList) {
+    public String getDomainKey(String domainList) {
         String[] domains = StringUtils.split(domainList, ",");
-        String domainKey = HostUtil.getHost(domains[0]).replace("*.", "");
+        return HostUtil.getHost(domains[0]).replace("*.", "");
+    }
+
+    public String getCrtFile(String domainKey) {
         String domainFolder = this.getKeyPairFolder() + "/" + domainKey;
-        String crtFile = domainFolder + "/" + domainKey + ".crt";
+        return domainFolder + "/" + domainKey + ".crt";
+    }
+
+    public String getKeyFile(String domainKey) {
+        String domainFolder = this.getKeyPairFolder() + "/" + domainKey;
+        return domainFolder + "/" + domainKey + ".key";
+    }
+
+    public boolean needOrderNewCertificate(String domainList) {
+        String domainKey = this.getDomainKey(domainList);
+        String crtFile = getCrtFile(domainKey);
         if (storer.isFileExist(crtFile)) {
             storer.downloadFile(crtFile);
             return isCloseToExpire(domainKey, crtFile);
@@ -60,7 +73,7 @@ public class AcmeSigner {
         try {
             X509Certificate myCert = (X509Certificate) CertificateFactory
                     .getInstance("X509")
-                    .generateCertificate(new FileInputStream(new File(crtFile)));
+                    .generateCertificate(new FileInputStream(crtFile));
             Instant expireDay = myCert.getNotAfter().toInstant();
             Collection<List<?>> domains = myCert.getSubjectAlternativeNames();
             for (List<?> domain : domains) {

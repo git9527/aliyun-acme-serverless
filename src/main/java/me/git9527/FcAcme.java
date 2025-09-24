@@ -4,8 +4,10 @@ import com.aliyun.fc.runtime.Context;
 import com.aliyun.fc.runtime.StreamRequestHandler;
 import lombok.extern.slf4j.Slf4j;
 import me.git9527.acme.AcmeSigner;
+import me.git9527.cdn.AliyunCdnCertUpdater;
 import me.git9527.util.EnvKeys;
 import me.git9527.util.EnvUtil;
+import org.apache.commons.lang3.StringUtils;
 import org.shredzone.acme4j.Account;
 import org.shredzone.acme4j.exception.AcmeException;
 
@@ -31,7 +33,16 @@ public class FcAcme implements StreamRequestHandler {
                 Account account = signer.initAccount();
                 signer.newOrder(account, domainList);
             } else {
-                logger.info("nothing else to do, ending....");
+                String cdnDomainList = EnvUtil.getEnvValue(EnvKeys.CDN_ALI_DOMAIN_LIST, "");
+                if (StringUtils.isNotBlank(cdnDomainList)) {
+                    String domainKey = signer.getDomainKey(domainList);
+                    String crtFilePath = signer.getCrtFile(domainKey);
+                    String keyFilePath = signer.getKeyFile(domainKey);
+                    AliyunCdnCertUpdater updater = new AliyunCdnCertUpdater(crtFilePath, keyFilePath);
+                    updater.updateCertificates(cdnDomainList);
+                } else {
+                    logger.info("nothing else to do, ending....");
+                }
             }
         } catch (AcmeException e) {
             throw new RuntimeException(e);

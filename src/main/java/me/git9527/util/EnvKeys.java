@@ -18,8 +18,13 @@ public enum EnvKeys {
     DNS_LOOP_RETRY,
     DNS_GODADDY_KEY,
     DNS_GODADDY_SECRET,
-    
+
     DNS_CF_EMAIL,
-    
-    DNS_CF_KEY;
+
+    DNS_CF_KEY,
+
+    CDN_ALI_DOMAIN_LIST,
+    CDN_ALI_REGION,
+    CDN_ALI_ACCESS_KEY,
+    CDN_ALI_ACCESS_SECRET;
 }
