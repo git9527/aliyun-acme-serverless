@@ -10,7 +10,6 @@ import me.git9527.util.HostUtil;
 import okhttp3.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -46,7 +45,6 @@ public class GoDaddyProvider extends DnsProvider {
         logger.info("txt after update:[{}]", afterUpdated);
     }
 
-    @NotNull
     private String getBaseUrlWithSubDomain() {
         return this.getBaseUrlWithoutSubDomain() + "/" + subDomain;
     }

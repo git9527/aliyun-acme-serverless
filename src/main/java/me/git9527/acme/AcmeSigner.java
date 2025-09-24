@@ -165,7 +165,7 @@ public class AcmeSigner {
     }
 
     private Challenge processAuth(Authorization auth, DnsProvider provider) throws AcmeException {
-        Dns01Challenge challenge = auth.findChallenge(Dns01Challenge.TYPE);
+        Challenge challenge = auth.findChallenge(Dns01Challenge.TYPE);
         provider.addTextRecord();
         challenge.trigger();
         HostUtil.sleepInSeconds(1);
