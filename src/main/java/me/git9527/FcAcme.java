@@ -9,7 +9,6 @@ import me.git9527.util.EnvKeys;
 import me.git9527.util.EnvUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.shredzone.acme4j.Account;
-import org.shredzone.acme4j.exception.AcmeException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,7 +26,7 @@ public class FcAcme implements StreamRequestHandler {
     public void handleRequest(InputStream inputStream, OutputStream outputStream, Context context) throws IOException {
         logger.info("acme signer start...");
         AcmeSigner signer = new AcmeSigner();
-        String domainList = EnvUtil.getEnvValue(EnvKeys.DOMAIN_LIST);
+        String domainList = EnvUtil.getEnvValue(EnvKeys.DOMAIN_LIST, "");
         try {
             if (StringUtils.isNotBlank(domainList) && signer.needOrderNewCertificate(domainList)) {
                 Account account = signer.initAccount();
