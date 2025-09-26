@@ -9,15 +9,11 @@ import me.git9527.util.EnvKeys;
 import me.git9527.util.EnvUtil;
 import me.git9527.util.X509Utils;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
-import java.util.List;
 
 @Slf4j
 public class AliyunCdnCertUpdater {

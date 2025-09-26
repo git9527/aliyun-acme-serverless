@@ -29,7 +29,7 @@ public class FcAcme implements StreamRequestHandler {
         AcmeSigner signer = new AcmeSigner();
         String domainList = EnvUtil.getEnvValue(EnvKeys.DOMAIN_LIST);
         try {
-            if (signer.needOrderNewCertificate(domainList)) {
+            if (StringUtils.isNotBlank(domainList) && signer.needOrderNewCertificate(domainList)) {
                 Account account = signer.initAccount();
                 signer.newOrder(account, domainList);
             } else {
