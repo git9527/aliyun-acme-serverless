@@ -34,7 +34,7 @@ public class FcAcme implements StreamRequestHandler {
             } else {
                 String cdnDomainList = EnvUtil.getEnvValue(EnvKeys.CDN_ALI_DOMAIN_LIST, "");
                 if (StringUtils.isNotBlank(cdnDomainList)) {
-                    String domainKey = signer.getDomainKey(domainList);
+                    String domainKey = signer.getDomainKey(cdnDomainList);
                     String crtFilePath = signer.getCrtFile(domainKey);
                     String keyFilePath = signer.getKeyFile(domainKey);
                     AliyunCdnCertUpdater updater = new AliyunCdnCertUpdater(crtFilePath, keyFilePath);

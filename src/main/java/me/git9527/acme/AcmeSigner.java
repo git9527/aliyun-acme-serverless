@@ -46,7 +46,12 @@ public class AcmeSigner {
 
     public String getDomainKey(String domainList) {
         String[] domains = StringUtils.split(domainList, ",");
-        return HostUtil.getHost(domains[0]).replace("*.", "");
+        String firstDomain = domains[0];
+        String[] parts = firstDomain.split("\\.");
+        if (parts.length < 2) {
+            return firstDomain;
+        }
+        return parts[parts.length - 2] + "." + parts[parts.length - 1];
     }
 
     public String getCrtFile(String domainKey) {
