@@ -56,7 +56,12 @@ public class AcmeSigner {
 
     public String getCrtFile(String domainKey) {
         String domainFolder = this.getKeyPairFolder() + "/" + domainKey;
-        return domainFolder + "/" + domainKey + ".crt";
+        String localCrt = domainFolder + "/" + domainKey + ".crt";
+        if (Files.exists(Path.of(localCrt))) {
+            return localCrt;
+        }
+        storer.downloadFile(localCrt);
+        return localCrt;
     }
 
     public String getKeyFile(String domainKey) {
@@ -64,10 +69,9 @@ public class AcmeSigner {
         String localKey = domainFolder + "/" + domainKey + ".key";
         if (Files.exists(Path.of(localKey))) {
             return localKey;
-        } else {
-            storer.downloadFile(localKey);
-            return localKey;
         }
+        storer.downloadFile(localKey);
+        return localKey;
     }
 
     public boolean needOrderNewCertificate(String domainList) {
